@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-from pypdf import PdfReader# PDF text extraction
+from pypdf import PdfReader    # <-- FIXED import
 
 # Load job roles and core skills
 with open("job_roles.json", "r") as f:
@@ -12,12 +12,16 @@ st.write("Upload your resume and get ATS score, missing skills, and professional
 # Extract text from PDF
 def extract_text_from_pdf(pdf_file):
     text = ""
-    reader = PyPDF2.PdfReader(pdf_file)
+    reader = PdfReader(pdf_file)
     for page in reader.pages:
-        text += page.extract_text() or ""
+        content = page.extract_text()
+        if content:
+            text += content.lower()   # convert to lowercase for accuracy
     return text
+
 # Analyze skills
 def analyze_resume(resume_text, skills):
+    resume_text = resume_text.lower()
     found = [s for s in skills if s.lower() in resume_text]
     missing = [s for s in skills if s.lower() not in resume_text]
     score = int((len(found) / len(skills)) * 100) if skills else 0
@@ -27,7 +31,7 @@ def analyze_resume(resume_text, skills):
 def extract_keywords(text):
     return [w.strip().lower() for w in text.split() if len(w) > 4]
 
-# Generate professional resume suggestions
+# Professional Suggestions
 def generate_suggestions(found, missing, score):
     suggestions = []
 
@@ -39,16 +43,18 @@ def generate_suggestions(found, missing, score):
         suggestions.append("Your resume is strong. Only small improvements are needed.")
 
     if missing:
-        suggestions.append("You can improve your resume by adding these important skills **IF you actually have experience with them**:")
+        suggestions.append("Add these important skills (only if you truly have experience):")
         suggestions.append(", ".join(missing))
 
-    suggestions.append("Use action verbs like: *Designed, Implemented, Led, Automated, Developed, Analyzed*.")
-    suggestions.append("Make your project descriptions measurable. Example: 'Improved model accuracy by 18%'.")
-    suggestions.append("Ensure your resume has clean formatting, consistent fonts, and proper spacing.")
-    suggestions.append("Mention tools, frameworks, certifications, and real results instead of generic statements.")
+    suggestions.append("Use action verbs like: Designed, Implemented, Led, Automated, Developed, Analyzed.")
+    suggestions.append("Make projects measurable. Example: 'Improved model accuracy by 18%'.")
+    suggestions.append("Ensure formatting is clean, consistent, and well-structured.")
+    suggestions.append("Highlight tools, frameworks, and certifications.")
 
     return suggestions
 
+
+# ---------------- UI --------------------
 
 uploaded = st.file_uploader("Upload Resume (PDF only)", type=["pdf"])
 selected_role = st.selectbox("Select Job Role (Optional)", ["None"] + list(JOB_ROLES.keys()))
@@ -73,9 +79,8 @@ if uploaded:
     st.write(found if found else "No important skills detected.")
 
     st.subheader("❌ Missing Important Skills")
-    st.write(missing if missing else "No missing skills — well done!")
+    st.write(missing if missing else "No missing skills — great job!")
 
-    # NEW FEATURE — Professional Suggestions
     st.subheader("📝 Professional Improvement Suggestions")
     suggestions = generate_suggestions(found, missing, score)
     for s in suggestions:
