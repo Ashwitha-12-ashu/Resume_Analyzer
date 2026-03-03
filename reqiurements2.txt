@@ -1,6 +1,6 @@
-streamliT
+streamlit
 PyPDF2==3.0.1
 pandas
 numpy
 nltk
-scikit-learn
+scikit-l
